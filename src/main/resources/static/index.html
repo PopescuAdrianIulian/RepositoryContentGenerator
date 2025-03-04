@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GitHub Content Fetcher</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            opacity: 0;
+            animation: fadeInPage 1s forwards;
+        }
+        @keyframes fadeInPage {
+            to { opacity: 1; }
+        }
+        .container {
+            background: #fff;
+            max-width: 800px;
+            width: 90%;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+            transform: translateY(30px);
+            animation: slideIn 0.8s forwards;
+        }
+        @keyframes slideIn {
+            to { transform: translateY(0); }
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+            letter-spacing: 1px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border 0.3s ease, box-shadow 0.3s ease;
+        }
+        input[type="text"]:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+            outline: none;
+        }
+        button {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: #fff;
+            padding: 14px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.3s ease;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #45a049, #3e8e41);
+        }
+        #loadingIndicator {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border-left-color: #4CAF50;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #result {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            background-color: #fafafa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #444;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+            animation-delay: 0.2s;
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        .copy-btn {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 14px;
+            background: #2196F3;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            background: #1976D2;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Content Generator</h1>
+
+    <div class="form-group">
+        <label for="owner">Repository Owner:</label>
+        <input type="text" id="owner" placeholder="e.g., spring-projects">
+    </div>
+
+    <div class="form-group">
+        <label for="repo">Repository Name:</label>
+        <input type="text" id="repo" placeholder="e.g., spring-boot">
+    </div>
+
+    <button onclick="fetchRepositoryContent()">Copy Content</button>
+
+    <div id="loadingIndicator">
+        <div class="spinner"></div>
+        <span>Loading content, please wait...</span>
+    </div>
+
+    <div id="result"></div>
+    <button class="copy-btn" id="copyButton" style="display: none;" onclick="copyResult()">Copy Result</button>
+</div>
+
+<script>
+    function showLoading() {
+        document.getElementById('loadingIndicator').style.display = 'block';
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('copyButton').style.display = 'none';
+    }
+
+    function hideLoading() {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('copyButton').style.display = 'block';
+    }
+
+    function fetchRepositoryContent() {
+        const owner = document.getElementById('owner').value.trim();
+        const repo = document.getElementById('repo').value.trim();
+
+        if (!owner || !repo) {
+            alert('Please fill in both repository owner and name');
+            return;
+        }
+
+        showLoading();
+
+        const url = `/fetch-all?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.text();
+            })
+            .then(data => {
+                document.getElementById('result').textContent = data;
+                hideLoading();
+            })
+            .catch(error => {
+                document.getElementById('result').textContent = 'Error: ' + error.message;
+                hideLoading();
+            });
+    }
+
+    function copyResult() {
+        const resultText = document.getElementById('result').textContent;
+        navigator.clipboard.writeText(resultText).then(() => {
+            alert('Result copied to clipboard!');
+        }).catch(err => {
+            alert('Failed to copy: ' + err);
+        });
+    }
+</script>
+</body>
+</html>
